@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EQ Sample">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon-180.png">
+<title>EQ Sample</title>
+<style>
+  :root{
+    --bg:#ffffff; --text:#000000; --muted:#5f5f5f;
+    --line:#d4d4d4; --line-dark:#000000; --fill:#f4f4f4;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --bar:74px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    line-height:1.5; -webkit-tap-highlight-color:transparent;
+    padding-top:max(16px,env(safe-area-inset-top));
+    padding-bottom:calc(var(--bar) + env(safe-area-inset-bottom) + 12px);
+  }
+  .wrap{max-width:600px;margin:0 auto;padding:0 16px;}
+
+  header{margin-bottom:8px;border-bottom:2px solid var(--line-dark);padding-bottom:12px;}
+  h1{font-size:21px;font-weight:700;letter-spacing:-0.01em;}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:5px;}
+
+  .nojs{border:2px solid var(--line-dark);border-radius:10px;padding:14px 16px;margin:16px 0;background:var(--fill);font-size:14px;line-height:1.55;}
+  .nojs strong{display:block;margin-bottom:4px;}
+
+  .field{padding:16px 0;border-bottom:1px solid var(--line);}
+  .field:first-of-type{padding-top:14px;}
+  .label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .name{font-weight:600;font-size:16px;}
+  .unit{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;}
+
+  .inp{
+    width:100%;background:var(--bg);color:var(--text);
+    border:1.5px solid var(--line-dark);border-radius:10px;
+    font-family:var(--mono);font-size:18px;min-height:52px;padding:0 14px;
+  }
+  .inp::placeholder{color:var(--muted);}
+  .inp:focus{outline:2px solid var(--text);outline-offset:1px;}
+  select.inp{
+    appearance:none;-webkit-appearance:none;padding-right:42px;
+    background-image:linear-gradient(45deg,transparent 50%,var(--text) 50%),linear-gradient(135deg,var(--text) 50%,transparent 50%);
+    background-position:calc(100% - 20px) 24px,calc(100% - 15px) 24px;
+    background-size:6px 6px,6px 6px;background-repeat:no-repeat;
+  }
+  .inp::-webkit-outer-spin-button,.inp::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .inp[type=number]{-moz-appearance:textfield;}
+
+  /* input + side toggle for mg/L fields */
+  .row{display:flex;gap:10px;align-items:stretch;}
+  .row .inp{flex:1;}
+  .lt{
+    flex:0 0 auto;min-width:74px;padding:0 10px;
+    border:1.5px solid var(--line-dark);border-radius:10px;
+    background:var(--bg);color:var(--text);
+    font-family:var(--sans);font-size:12px;font-weight:600;line-height:1.15;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    cursor:pointer;user-select:none;
+  }
+  .lt:active{opacity:.85;}
+  .lt[aria-pressed="true"]{background:var(--text);color:var(--bg);font-weight:700;}
+  .lt:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+
+  .out-wrap{margin-top:20px;border:2px solid var(--line-dark);border-radius:12px;overflow:hidden;}
+  .out-top{padding:10px 16px;border-bottom:1px solid var(--line-dark);font-family:var(--mono);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);}
+  pre#out{font-family:var(--mono);font-size:15px;line-height:2;padding:16px;margin:0;white-space:pre-wrap;word-break:break-word;min-height:28px;}
+  pre#out .empty{color:var(--muted);}
+
+  /* sticky bottom action bar */
+  .actionbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:10;
+    display:flex;gap:10px;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,0.96);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    border-top:1.5px solid var(--line-dark);
+  }
+  .actionbar .inner{max-width:600px;margin:0 auto;display:flex;gap:10px;width:100%;}
+  button{font-family:var(--sans);cursor:pointer;border-radius:10px;font-weight:600;}
+  .copy{flex:1;background:var(--text);color:var(--bg);border:1.5px solid var(--text);font-size:16px;font-weight:700;min-height:54px;}
+  .copy:active{opacity:.85;}
+  .copy.done{background:var(--bg);color:var(--text);}
+  .clear{background:var(--bg);color:var(--text);border:1.5px solid var(--line-dark);font-size:15px;padding:0 20px;min-height:54px;}
+  button:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+
+  .hint{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <noscript>
+    <div class="nojs"><strong>Open this in a browser, not a file preview.</strong>The live entry and Copy button need JavaScript. If you saved this as a Home Screen app, just launch it from the icon.</div>
+  </noscript>
+
+  <header>
+    <h1>EQ Sample</h1>
+    <p class="sub">Pick a tank, enter the readings you have. It formats the same way every time, ready to copy.</p>
+  </header>
+
+  <div class="field">
+    <div class="label"><span class="name">EQ Sample Tank</span><span class="unit">A or B</span></div>
+    <select class="inp" id="tank" aria-label="EQ Sample Tank">
+      <option value="">— Select tank —</option>
+      <option value="A">Tank A</option>
+      <option value="B">Tank B</option>
+    </select>
+  </div>
+
+  <div id="fields"></div>
+
+  <div class="out-wrap">
+    <div class="out-top">Field Entry</div>
+    <pre id="out"></pre>
+  </div>
+  <p class="hint">Only the readings you enter appear in the copy.</p>
+</div>
+
+<div class="actionbar">
+  <div class="inner">
+    <button class="copy" id="copy" type="button">Copy entry</button>
+    <button class="clear" id="clear" type="button">Clear</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){return document.getElementById(id);};
+  var out=$('out'), copyBtn=$('copy'), fieldsBox=$('fields'), tankSel=$('tank');
+
+  // Field definitions. dec = decimal places (fixed); int = whole-number mg/L field;
+  // lt = gets a "less than" toggle (mg/L fields only).
+  var FIELDS = {
+    ph:        {out:'pH',         label:'pH',         ph_:'0.00', dec:2, unit:'',      lt:false},
+    level:     {out:'Level',      label:'Level',      ph_:'0.00', dec:2, unit:'',      lt:false},
+    phosphate: {out:'Phosphate',  label:'Phosphate',  ph_:'000',  int:true, unit:' mg/L', lt:true},
+    sulfate:   {out:'Sulfate',    label:'Sulfate',    ph_:'000',  int:true, unit:' mg/L', lt:true},
+    cod:       {out:'COD',        label:'COD',        ph_:'000',  int:true, unit:' mg/L', lt:true},
+    h2o2:      {out:'H2O2',       label:'H\u2082O\u2082', ph_:'0.0', dec:1, unit:'',   lt:false},
+    alkalinity:{out:'Alkalinity', label:'Alkalinity', ph_:'000',  int:true, unit:' mg/L', lt:true}
+  };
+  // Per-tank field order (COD is last in both). Phosphate/Sulfate/COD are shared.
+  var TANK_FIELDS = {
+    A: ['ph','level','phosphate','sulfate','cod'],
+    B: ['phosphate','sulfate','h2o2','alkalinity','cod']
+  };
+
+  // Persisted state so shared fields keep their value when switching tanks.
+  var vals = {};   // id -> raw string
+  var ltOn = {};   // id -> bool
+
+  function unitLabel(f){
+    if(f.unit) return 'mg/L';
+    if(f.dec===2) return '0.00';
+    if(f.dec===1) return '0.0';
+    return '';
+  }
+
+  function buildFieldRow(id){
+    var f=FIELDS[id];
+    var field=document.createElement('div'); field.className='field';
+
+    var label=document.createElement('div'); label.className='label';
+    var name=document.createElement('span'); name.className='name'; name.innerHTML=f.label;
+    var unit=document.createElement('span'); unit.className='unit'; unit.textContent=unitLabel(f);
+    label.appendChild(name); label.appendChild(unit);
+    field.appendChild(label);
+
+    var row=document.createElement('div'); row.className='row';
+    var input=document.createElement('input');
+    input.className='inp'; input.type='number';
+    input.inputMode = f.dec ? 'decimal' : 'numeric';
+    if(f.dec){ input.step = f.dec===2 ? '0.01' : '0.1'; }
+    input.setAttribute('autocomplete','off');
+    input.placeholder=f.ph_;
+    input.id='f_'+id;
+    input.value = vals[id]||'';
+    input.addEventListener('input', function(){ vals[id]=input.value; render(); });
+    row.appendChild(input);
+
+    if(f.lt){
+      var btn=document.createElement('button');
+      btn.type='button'; btn.className='lt'; btn.id='lt_'+id;
+      btn.textContent='less than';
+      btn.setAttribute('aria-pressed', ltOn[id]?'true':'false');
+      btn.setAttribute('aria-label','Mark '+f.out+' as less than');
+      btn.addEventListener('click', function(){
+        ltOn[id]=!ltOn[id];
+        btn.setAttribute('aria-pressed', ltOn[id]?'true':'false');
+        render();
+      });
+      row.appendChild(btn);
+    }
+    field.appendChild(row);
+    return field;
+  }
+
+  function renderFields(){
+    fieldsBox.innerHTML='';
+    var tank=tankSel.value;
+    if(!tank) return;
+    TANK_FIELDS[tank].forEach(function(id){ fieldsBox.appendChild(buildFieldRow(id)); });
+  }
+
+  // Format one value. Returns null when blank (so the line is omitted).
+  function isPlainNumber(s){ return /^-?(\d+\.?\d*|\.\d+)$/.test(s); }
+  function fmtValue(id){
+    var f=FIELDS[id];
+    var s=(vals[id]||'').trim();
+    if(s==='') return null;
+    var v;
+    if(isPlainNumber(s)){
+      if(f.dec){ v=parseFloat(s).toFixed(f.dec); }   // fixed decimals, no leading-zero padding
+      else { v=String(Number(s)); }                   // whole-number, strips any leading zeros
+    } else {
+      v=s;                                            // anything non-numeric: show as typed
+    }
+    if(f.lt && ltOn[id]) v='less than '+v;
+    return v+f.unit;
+  }
+
+  function buildLines(){
+    var tank=tankSel.value;
+    if(!tank) return null;
+    var header='EQ Sample Tank '+tank;
+    var body=[];
+    TANK_FIELDS[tank].forEach(function(id){
+      var v=fmtValue(id);
+      if(v!==null) body.push(FIELDS[id].out+' - '+v);
+    });
+    return {header:header, body:body};
+  }
+
+  function plainText(){
+    var r=buildLines();
+    if(!r) return '';
+    return r.body.length ? r.header+'\n\n'+r.body.join('\n') : r.header;
+  }
+
+  function esc(s){return s.replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+  function render(){
+    var t=plainText();
+    if(!t){ out.innerHTML='<span class="empty">Select a tank to begin.</span>'; return; }
+    out.innerHTML=esc(t);
+  }
+
+  tankSel.addEventListener('change', function(){ renderFields(); render(); });
+
+  copyBtn.addEventListener('click', function(){
+    var text=plainText(), ok=false;
+    function finish(){
+      copyBtn.textContent=ok?'Copied':'Press and hold the entry to copy';
+      copyBtn.classList.toggle('done',ok);
+      clearTimeout(copyBtn._t);
+      copyBtn._t=setTimeout(function(){copyBtn.textContent='Copy entry';copyBtn.classList.remove('done');},1700);
+    }
+    function fallback(){
+      var ta=document.createElement('textarea');
+      ta.value=text; ta.readOnly=false; ta.contentEditable='true';
+      ta.style.position='fixed'; ta.style.top='0'; ta.style.left='0';
+      ta.style.width='1px'; ta.style.height='1px'; ta.style.opacity='0';
+      document.body.appendChild(ta);
+      var range=document.createRange(); range.selectNodeContents(ta);
+      var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      ta.setSelectionRange(0, text.length);
+      try{ ok=document.execCommand('copy'); }catch(e){}
+      sel.removeAllRanges();
+      document.body.removeChild(ta); finish();
+    }
+    if(!text){ return; }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ok=true;finish();}, fallback);
+    } else { fallback(); }
+  });
+
+  $('clear').addEventListener('click', function(){
+    vals={}; ltOn={};
+    renderFields(); render();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  // initial
+  renderFields(); render();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('./sw.js').catch(function(){}); });
+  }
+})();
+</script>
+</body>
+</html>
