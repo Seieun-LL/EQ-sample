@@ -1,5 +1,5 @@
 /* EQ Sample offline cache */
-var CACHE = 'eqsample-v2';
+var CACHE = 'eqsample-v3';
 var ASSETS = [
   './',
   './index.html',
