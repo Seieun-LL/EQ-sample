@@ -142,6 +142,7 @@
   // Field definitions. dec = decimal places (fixed); int = whole-number mg/L field;
   // lt = gets a "less than" toggle (mg/L fields only).
   var FIELDS = {
+    tss:       {out:'TSS',        label:'TSS',        ph_:'000',  int:true, unit:' mg/L', lt:true},
     ph:        {out:'pH',         label:'pH',         ph_:'0.00', dec:2, unit:'',      lt:false},
     level:     {out:'Level',      label:'Level',      ph_:'0.00', dec:2, unit:'',      lt:false},
     phosphate: {out:'Phosphate',  label:'Phosphate',  ph_:'000',  int:true, unit:' mg/L', lt:true},
@@ -152,8 +153,8 @@
   };
   // Per-tank field order (COD is last in both). Phosphate/Sulfate/COD are shared.
   var TANK_FIELDS = {
-    A: ['ph','level','phosphate','sulfate','cod'],
-    B: ['phosphate','sulfate','h2o2','alkalinity','cod']
+    A: ['tss','ph','level','phosphate','sulfate','cod'],
+    B: ['tss','phosphate','sulfate','h2o2','alkalinity','cod']
   };
 
   // Persisted state so shared fields keep their value when switching tanks.
